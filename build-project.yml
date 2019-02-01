@@ -15,13 +15,13 @@ jobs:
       versionSpec: 3.7
 
   - ${{ if ne(parameters.name, 'setuptools') }}:
-    - script: "python3.7 -m pip install pip==19.0.1 setuptools==40.7.2 wheel==0.32.3"
+    - script: "python3.7 -m pip install -U pip==19.0.1 setuptools==40.7.2 wheel==0.32.3"
       displayName: get pip to build wheel
     - script: "python3.7 -m pip wheel --no-deps -w $(Build.ArtifactStagingDirectory) 'git+${{parameters.git}}'"
       displayName: ${{ format('build wheel for {0}', parameters.name) }}
 
   - ${{ if eq(parameters.name, 'setuptools') }}:
-    - script: "python3.7 -m pip install setuptools==40.7.2 wheel==0.32.3"
+    - script: "python3.7 -m pip install -U setuptools==40.7.2 wheel==0.32.3"
       displayName: get build tools to build wheel
     - script: "git clone https://github.com/pypa/setuptools.git"
       displayName: clone repository

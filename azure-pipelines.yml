@@ -21,3 +21,42 @@ jobs:
   parameters: {name: wheel, git: "https://github.com/pypa/wheel.git"}
 - template: build-project.yml
   parameters: {name: tox, git: "https://github.com/tox-dev/tox.git"}
+
+
+- job: run_test
+  pool: {vmImage: 'Ubuntu 16.04'}
+  condition: always()
+  dependsOn:
+  - build_setuptools
+  - build_wheel
+  - build_virtualenv
+  - build_pip
+  - build_tox
+  steps:
+  - task: DownloadBuildArtifacts@0
+    displayName: download coverage files for run
+    inputs:
+      buildType: current
+      downloadType: specific
+      itemPattern: wheel-*/*
+      downloadPath: $(Build.StagingDirectory)
+
+  - task: UsePythonVersion@0
+    displayName: setup python
+    inputs:
+      versionSpec: 3.7
+  - script: "python3.7 -m pip install -U pip==19.0.1 devpi-server==4.8.0 devpi-client==4.2.0 twine==1.12.1"
+    displayName: install devpi
+  - script: |
+      devpi-server --start --init
+      devpi use http://localhost:3141
+      devpi user -c test password=123
+      devpi login test --password=123
+      devpi index -c dev bases=root/pypi
+      devpi use test/dev
+      ls -alth $(Build.StagingDirectory)/*/*.whl
+      devpi upload $(Build.StagingDirectory)/*/*.whl
+    displayName: bootstrap devpi
+  - script: devpi-server --stop
+    condition: succeededOrFailed()
+    displayName: stop devpi
