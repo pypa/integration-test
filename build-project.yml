@@ -1,0 +1,47 @@
+parameters:
+  name: ""
+  git: ""
+
+jobs:
+- job: ${{ format('build_{0}', parameters.name) }}
+  pool:
+    vmImage: "Ubuntu 16.04"
+
+  steps:
+  # ensure the required Python versions are available
+  - task: UsePythonVersion@0
+    displayName: setup python
+    inputs:
+      versionSpec: 3.7
+
+  - ${{ if ne(parameters.name, 'setuptools') }}:
+    - script: "python3.7 -m pip install pip==19.0.1 setuptools==40.7.2 wheel==0.32.3"
+      displayName: get pip to build wheel
+    - script: "python3.7 -m pip wheel --no-deps -w $(Build.ArtifactStagingDirectory) 'git+${{parameters.git}}'"
+      displayName: ${{ format('build wheel for {0}', parameters.name) }}
+
+  - ${{ if eq(parameters.name, 'setuptools') }}:
+    - script: "python3.7 -m pip install setuptools==40.7.2 wheel==0.32.3"
+      displayName: get build tools to build wheel
+    - script: "git clone https://github.com/pypa/setuptools.git"
+      displayName: clone repository
+    - script: "cd setuptools && python3.7 bootstrap.py"
+      displayName: "bootstrap"
+    - script: "cd setuptools && python3.7 setup.py bdist_wheel"
+      displayName: build setuptools wheel
+    - task: CopyFiles@2
+      displayName: move wheel files into staging area
+      inputs:
+        sourceFolder: $(System.DefaultWorkingDirectory)/setuptools/dist
+        contents: |
+          setuptools*
+        targetFolder: $(Build.StagingDirectory)
+
+  - script: "ls -alth $(Build.ArtifactStagingDirectory)"
+    displayName: ${{ format('show built wheel for {0}', parameters.name) }}
+  - task: PublishBuildArtifacts@1
+    displayName: ${{ format('publish wheel for {0}', parameters.name) }}
+    condition: succeededOrFailed()
+    inputs:
+      pathtoPublish: $(Build.ArtifactStagingDirectory)
+      ArtifactName: ${{ format('wheel-{0}', parameters.name) }}

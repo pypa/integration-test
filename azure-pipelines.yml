@@ -1,0 +1,23 @@
+name: $(BuildDefinitionName)_$(Date:yyyyMMdd)$(Rev:.rr)
+
+variables:
+  "System.PreferGit": true
+
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+    - refs/tags/*
+
+jobs:
+- template: build-project.yml
+  parameters: {name: setuptools, git: "https://github.com/pypa/setuptools.git"}
+- template: build-project.yml
+  parameters: {name: pip, git: "https://github.com/pypa/pip.git"}
+- template: build-project.yml
+  parameters: {name: virtualenv, git: "https://github.com/pypa/virtualenv.git"}
+- template: build-project.yml
+  parameters: {name: wheel, git: "https://github.com/pypa/wheel.git"}
+- template: build-project.yml
+  parameters: {name: tox, git: "https://github.com/tox-dev/tox.git"}
