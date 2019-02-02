@@ -7,4 +7,4 @@ Ensure that the master branch of the following packages work together well:
 2. wheel
 3. setuptools
 4. virtualenv
-5. pip
+5. tox
